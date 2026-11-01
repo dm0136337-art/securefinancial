@@ -36,6 +36,13 @@ Populate `.env.local` with your own Supabase values:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
 ```
 
-The app will work in demo mode without Supabase credentials, while still exposing the required contact submission route and dashboard UI.
+`SUPABASE_SERVICE_ROLE_KEY` is used only by server-side administrator operations and must never use a `NEXT_PUBLIC_` prefix or be exposed to browser code.
+
+## Profile photo storage setup
+
+Run [`supabase/admin-customer-actions.sql`](./supabase/admin-customer-actions.sql) first, then run [`supabase/profile-photos.sql`](./supabase/profile-photos.sql) in the Supabase SQL Editor. The first migration expects the existing Secure Financial base tables, `public.is_active_admin()` policies/helpers and `public.protect_profile_fields()` trigger-compatible schema; review and back up the correct Supabase project before applying it. The second script configures the private `profile-photos` bucket, owner-scoped Storage policies, and the `set_own_profile_photo` RPC. Both profile-photo SQL copies must be kept synchronized.
+
+The browser uploads images under a folder named for the authenticated user's ID and stores that object path in `profiles.photo_url`. User and admin dashboards create signed photo URLs that expire after five minutes. Reload the page to obtain a fresh URL. A URL issued before suspension or archival remains usable until its expiration; Storage RLS cannot revoke an already-issued signed URL.
